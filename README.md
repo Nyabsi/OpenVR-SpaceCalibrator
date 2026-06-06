@@ -4,6 +4,9 @@ This is a fork of [OpenVR Space Calibrator](https://github.com/pushrax/OpenVR-Sp
 
 So I took a different approach. You rigidly mount a Vive tracker to your headset, and after calibrating, the driver stops using the headset's own pose and instead builds it from the tracker. Now the headset and all your other lighthouse devices are running off the same tracking system, so there's nothing left to drift against. The SLAM tracking is still there underneath, you just get proper alignment on top of it.
 
+> [!NOTE]
+> This is a personal project, I do not accept contributions, pull requests or issues. Reach out to me in e-mail `nyabsi@sovellus.cc` if you have issues.
+ 
 ## Requirements
 
 - Lighthouse system (or other equivalent)
