@@ -1,192 +1,145 @@
 ;--------------------------------
-;Include Modern UI
+; Include Modern UI
 
-	!include "MUI2.nsh"
-
-;--------------------------------
-;General
-
-	!define OVERLAY_BASEDIR "..\client_overlay\bin\win64"
-	!define DRIVER_RESDIR "..\OpenVR-SpaceCalibratorDriver\01spacecalibrator"
-
-	Name "OpenVR-SpaceCalibrator"
-	OutFile "OpenVR-SpaceCalibrator.exe"
-	InstallDir "$PROGRAMFILES64\OpenVR-SpaceCalibrator"
-	InstallDirRegKey HKLM "Software\OpenVR-SpaceCalibrator\Main" ""
-	RequestExecutionLevel admin
-	ShowInstDetails show
-	
-;--------------------------------
-;Variables
-
-VAR upgradeInstallation
+!include "MUI2.nsh"
 
 ;--------------------------------
-;Interface Settings
+; General Configuration
 
-	!define MUI_ABORTWARNING
+!define APP_VERSION "2.0.0"
+!define APP_VERSION_META "2.0.0.0"
+!define APP_NAME "OpenVR-SpaceCalibrator Special Edition"
+
+!define INSTALL_DIR "$PROGRAMFILES64\${APP_NAME}"
+!define LICENSE_FILE "../bin/LICENSE.txt"
+!define FILES_DIR "../bin/"
+!define DRIVER_DIR "../spacecalibratorex"
+
+Name "${APP_NAME}"
+OutFile "${APP_NAME} Installer.exe"
+InstallDir "${INSTALL_DIR}"
+InstallDirRegKey HKLM "Software\${APP_NAME}\Main" ""
+RequestExecutionLevel admin
+ShowInstDetails show
+
+VIProductVersion "${APP_VERSION_META}"
+VIAddVersionKey /LANG=1033 "ProductName" "${APP_NAME}"
+VIAddVersionKey /LANG=1033 "FileDescription" "${APP_NAME} Installer"
+VIAddVersionKey /LANG=1033 "LegalCopyright" "Copyright (c) 2026 Nyabsi"
+VIAddVersionKey /LANG=1033 "FileVersion" "${APP_VERSION_META}"
+VIAddVersionKey /LANG=1033 "ProductVersion" "${APP_VERSION}"
 
 ;--------------------------------
-;Pages
+; Variables
 
-	!insertmacro MUI_PAGE_LICENSE "..\LICENSE"
-	!define MUI_PAGE_CUSTOMFUNCTION_PRE dirPre
-	!insertmacro MUI_PAGE_DIRECTORY
-	!insertmacro MUI_PAGE_INSTFILES
-  
-	!insertmacro MUI_UNPAGE_CONFIRM
-	!insertmacro MUI_UNPAGE_INSTFILES
-  
-;--------------------------------
-;Languages
- 
-	!insertmacro MUI_LANGUAGE "English"
+Var alreadyInstalled
 
 ;--------------------------------
-;Macros
+; Interface Settings
+
+!define MUI_ABORTWARNING
 
 ;--------------------------------
-;Functions
+; Pages
+
+!insertmacro MUI_PAGE_LICENSE "${LICENSE_FILE}"
+!define MUI_PAGE_CUSTOMFUNCTION_PRE dirPre
+!insertmacro MUI_PAGE_DIRECTORY
+!insertmacro MUI_PAGE_INSTFILES
+
+!insertmacro MUI_UNPAGE_CONFIRM
+!insertmacro MUI_UNPAGE_INSTFILES
+
+;--------------------------------
+; Language
+
+!insertmacro MUI_LANGUAGE "English"
+
+;--------------------------------
+; Functions
 
 Function dirPre
-	StrCmp $upgradeInstallation "true" 0 +2 
-		Abort
+    StrCmp $alreadyInstalled "true" 0 +2
+        Abort
 FunctionEnd
 
 Function .onInit
-	StrCpy $upgradeInstallation "false"
- 
-	ReadRegStr $R0 HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\OpenVRSpaceCalibrator" "UninstallString"
-	StrCmp $R0 "" done
-	
-	
-	; If SteamVR is already running, display a warning message and exit
-	FindWindow $0 "Qt5QWindowIcon" "SteamVR Status"
-	StrCmp $0 0 +3
-		MessageBox MB_OK|MB_ICONEXCLAMATION \
-			"SteamVR is still running. Cannot install this software.$\nPlease close SteamVR and try again."
-		Abort
- 
-	
-	MessageBox MB_OKCANCEL|MB_ICONEXCLAMATION \
-		"OpenVR-SpaceCalibrator is already installed. $\n$\nClick `OK` to upgrade the \
-		existing installation or `Cancel` to cancel this upgrade." \
-		IDOK upgrade
-	Abort
- 
-	upgrade:
-		StrCpy $upgradeInstallation "true"
-	done:
+    StrCpy $alreadyInstalled "false"
+
+    ReadRegStr $R0 HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\${APP_NAME}" "UninstallString"
+    StrCmp $R0 "" done
+
+    MessageBox MB_YESNOCANCEL|MB_ICONQUESTION \
+        "${APP_NAME} is already installed.$\n$\nClick YES to Repair$\nClick NO to Remove$\nClick CANCEL to abort installation" \
+        IDYES repair \
+        IDNO remove
+    Abort
+
+    repair:
+        StrCpy $alreadyInstalled "true"
+        Goto done
+
+    remove:
+        ExecWait '"$INSTDIR\Uninstall.exe" /S _?=$INSTDIR'
+        MessageBox MB_OK "${APP_NAME} has been uninstalled."
+        Delete "$INSTDIR\Uninstall.exe"
+        RMDir "$INSTDIR"
+        Quit
+
+    done:
 FunctionEnd
 
+
 ;--------------------------------
-;Installer Sections
+; Installer Section
 
 Section "Install" SecInstall
-	
-	StrCmp $upgradeInstallation "true" 0 noupgrade 
-		DetailPrint "Uninstall previous version..."
-		ExecWait '"$INSTDIR\Uninstall.exe" /S _?=$INSTDIR'
-		Delete $INSTDIR\Uninstall.exe
-		Goto afterupgrade
-		
-	noupgrade:
 
-	afterupgrade:
+    StrCmp $alreadyInstalled "true" 0 noupgrade
+        DetailPrint "Cleaning previous installation..."
+        ExecWait '"$INSTDIR\Uninstall.exe" /S _?=$INSTDIR'
+        Delete "$INSTDIR\Uninstall.exe"
+    noupgrade:
 
-	SetOutPath "$INSTDIR"
+    SetOutPath "$INSTDIR"
 
-	File "..\LICENSE"
-	File "..\x64\Release\OpenVR-SpaceCalibrator.exe"
-	File "..\lib\openvr\lib\win64\openvr_api.dll"
-	File "..\OpenVR-SpaceCalibrator\manifest.vrmanifest"
-	File "..\OpenVR-SpaceCalibrator\icon.png"
+    File "${FILES_DIR}\LICENSE.txt"
+    File "${FILES_DIR}\OpenVR-SpaceCalibrator.exe"
+    File "${FILES_DIR}\openvr_api.dll"
+    File "${FILES_DIR}\icon.png"
 
-	ExecWait '"$INSTDIR\vcredist_x64.exe" /install /quiet'
-	
-	Var /GLOBAL vrRuntimePath
-	nsExec::ExecToStack '"$INSTDIR\OpenVR-SpaceCalibrator.exe" -openvrpath'
-	Pop $0
-	Pop $vrRuntimePath
-	DetailPrint "VR runtime path: $vrRuntimePath"
-	
-	; Old beta driver
-	StrCmp $upgradeInstallation "true" 0 nocleanupbeta 
-		Delete "$vrRuntimePath\drivers\000spacecalibrator\driver.vrdrivermanifest"
-		Delete "$vrRuntimePath\drivers\000spacecalibrator\resources\driver.vrresources"
-		Delete "$vrRuntimePath\drivers\000spacecalibrator\resources\settings\default.vrsettings"
-		Delete "$vrRuntimePath\drivers\000spacecalibrator\bin\win64\driver_000spacecalibrator.dll"
-		Delete "$vrRuntimePath\drivers\000spacecalibrator\bin\win64\space_calibrator_driver.log"
-		RMdir "$vrRuntimePath\drivers\000spacecalibrator\resources\settings"
-		RMdir "$vrRuntimePath\drivers\000spacecalibrator\resources\"
-		RMdir "$vrRuntimePath\drivers\000spacecalibrator\bin\win64\"
-		RMdir "$vrRuntimePath\drivers\000spacecalibrator\bin\"
-		RMdir "$vrRuntimePath\drivers\000spacecalibrator\"
-	nocleanupbeta:
+    SetOutPath "$INSTDIR\driver"
+    File /r "${DRIVER_DIR}\*"
 
-	SetOutPath "$vrRuntimePath\drivers\01spacecalibrator"
-	File "${DRIVER_RESDIR}\driver.vrdrivermanifest"
-	SetOutPath "$vrRuntimePath\drivers\01spacecalibrator\resources"
-	File "${DRIVER_RESDIR}\resources\driver.vrresources"
-	SetOutPath "$vrRuntimePath\drivers\01spacecalibrator\resources\settings"
-	File "${DRIVER_RESDIR}\resources\settings\default.vrsettings"
-	SetOutPath "$vrRuntimePath\drivers\01spacecalibrator\bin\win64"
-	File "..\x64\Release\driver_01spacecalibrator.dll"
-	
-	WriteRegStr HKLM "Software\OpenVR-SpaceCalibrator\Main" "" $INSTDIR
-	WriteRegStr HKLM "Software\OpenVR-SpaceCalibrator\Driver" "" $vrRuntimePath
-  
-	WriteUninstaller "$INSTDIR\Uninstall.exe"
-	WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\OpenVRSpaceCalibrator" "DisplayName" "OpenVR-SpaceCalibrator"
-	WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\OpenVRSpaceCalibrator" "UninstallString" "$\"$INSTDIR\Uninstall.exe$\""
+    WriteRegStr HKLM "Software\${APP_NAME}\Main" "" $INSTDIR
+    WriteUninstaller "$INSTDIR\Uninstall.exe"
 
-	CreateShortCut "$SMPROGRAMS\OpenVR-SpaceCalibrator.lnk" "$INSTDIR\OpenVR-SpaceCalibrator.exe"
-	
-	SetOutPath "$INSTDIR"
-	nsExec::ExecToLog '"$INSTDIR\OpenVR-SpaceCalibrator.exe" -installmanifest'
-	nsExec::ExecToLog '"$INSTDIR\OpenVR-SpaceCalibrator.exe" -activatemultipledrivers'
+    WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\${APP_NAME}" "DisplayName" "${APP_NAME}"
+    WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\${APP_NAME}" "UninstallString" "$\"$INSTDIR\Uninstall.exe$\""
+
+    CreateShortCut "$SMPROGRAMS\${APP_NAME}.lnk" "$INSTDIR\OpenVR-SpaceCalibrator.exe"
+
+    ExecWait '"C:\\Program Files (x86)\\Steam\\steamapps\\common\\SteamVR\\bin\\win64\\vrpathreg.exe" adddriver "$INSTDIR\\driver"'
 
 SectionEnd
 
 ;--------------------------------
-;Uninstaller Section
+; Uninstaller Section
 
 Section "Uninstall"
-	; If SteamVR is already running, display a warning message and exit
-	FindWindow $0 "Qt5QWindowIcon" "SteamVR Status"
-	StrCmp $0 0 +3
-		MessageBox MB_OK|MB_ICONEXCLAMATION \
-			"SteamVR is still running. Cannot uninstall this software.$\nPlease close SteamVR and try again."
-		Abort
-	
-	SetOutPath "$INSTDIR"
-	nsExec::ExecToLog '"$INSTDIR\OpenVR-SpaceCalibrator.exe" -removemanifest'
 
-	Var /GLOBAL vrRuntimePath2
-	ReadRegStr $vrRuntimePath2 HKLM "Software\OpenVR-SpaceCalibrator\Driver" ""
-	DetailPrint "VR runtime path: $vrRuntimePath2"
-	Delete "$vrRuntimePath2\drivers\01spacecalibrator\driver.vrdrivermanifest"
-	Delete "$vrRuntimePath2\drivers\01spacecalibrator\resources\driver.vrresources"
-	Delete "$vrRuntimePath2\drivers\01spacecalibrator\resources\settings\default.vrsettings"
-	Delete "$vrRuntimePath2\drivers\01spacecalibrator\bin\win64\driver_01spacecalibrator.dll"
-	Delete "$vrRuntimePath2\drivers\01spacecalibrator\bin\win64\space_calibrator_driver.log"
-	RMdir "$vrRuntimePath2\drivers\01spacecalibrator\resources\settings"
-	RMdir "$vrRuntimePath2\drivers\01spacecalibrator\resources\"
-	RMdir "$vrRuntimePath2\drivers\01spacecalibrator\bin\win64\"
-	RMdir "$vrRuntimePath2\drivers\01spacecalibrator\bin\"
-	RMdir "$vrRuntimePath2\drivers\01spacecalibrator\"
+    Delete "$INSTDIR\LICENSE.txt"
+    Delete "$INSTDIR\OpenVR-SpaceCalibrator.exe"
+    Delete "$INSTDIR\openvr_api.dll"
+    Delete "$INSTDIR\icon.png"
+    RMDir /r $INSTDIR\spacecalibratorex"
 
-	Delete "$INSTDIR\LICENSE"
-	Delete "$INSTDIR\OpenVR-SpaceCalibrator.exe"
-	Delete "$INSTDIR\openvr_api.dll"
-	Delete "$INSTDIR\manifest.vrmanifest"
-	Delete "$INSTDIR\icon.png"
-	
-	DeleteRegKey HKLM "Software\OpenVR-SpaceCalibrator\Main"
-	DeleteRegKey HKLM "Software\OpenVR-SpaceCalibrator\Driver"
-	DeleteRegKey HKLM "Software\OpenVR-SpaceCalibrator"
-	DeleteRegKey HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\OpenVRSpaceCalibrator"
+    DeleteRegKey HKLM "Software\${APP_NAME}"
+    DeleteRegKey HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\${APP_NAME}"
+    Delete "$SMPROGRAMS\${APP_NAME}.lnk"
 
-	Delete "$SMPROGRAMS\OpenVR-SpaceCalibrator.lnk"
+    RMDir "$INSTDIR"
+
+    ExecWait '"C:\\Program Files (x86)\\Steam\\steamapps\\common\\SteamVR\\bin\\win64\\vrpathreg.exe" removedriver "$INSTDIR\\driver"'
+
 SectionEnd
-
