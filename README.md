@@ -8,7 +8,7 @@ So I took a different approach. You rigidly mount a Vive tracker to your headset
 > This is a personal project, I do not accept contributions, pull requests or issues. Reach out to me in e-mail `nyabsi@sovellus.cc` if you have issues.
 
 > [!WARNING]
-> It is higly recommended to use a Vive Tracker 3.0, Tundra Trackers are known for sub-par trackinf and jitter.
+> It is higly recommended to use a Vive Tracker 3.0, Tundra Trackers are known for sub-par tracking and jitter.
  
 ## Requirements
 
