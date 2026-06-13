@@ -31,8 +31,6 @@ This puts the headset and all your other lighthouse devices on the same tracking
 
 ## Calibration Guide
 
-https://github.com/user-attachments/assets/de458fa9-3029-4aca-95d1-5753ce6602a9
-
 1. Mount a rigid tracker to your headset.
 2. Hit **Calibrate**. It goes through a few stages, and the on-screen text tells you what it wants at each one:
     - First it asks you to **move your head around** so it can spot which tracker is the one mounted to your head.
@@ -71,7 +69,7 @@ Re-run the calibration with a **slower calibration speed**. A rushed calibration
 
 You need to re-center your headset tracking while rotating around in a circle until the view matches again, this is a known quirk as of right now.
 
-### Steam Link feels off / some features don't work
+### Steam Link feels off
 
 This is expected, see [Compatibility](#compatibility). Steam Link seems to apply its own reprojection / pose prediction on-device on top of the overridden pose, and it's stage tracked rather than local space tracked, which breaks yaw correction. For the best experience, use PICO Connect, Virtual Desktop or ALVR.
 
